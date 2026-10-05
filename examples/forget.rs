@@ -7,7 +7,11 @@ fn main() {
     fs::create_dir_all(&dir).unwrap();
 
     // A system that knows things about people.
-    fs::write(dir.join("memory.txt"), "alice likes tea\nbob likes coffee\n").unwrap();
+    fs::write(
+        dir.join("memory.txt"),
+        "alice likes tea\nbob likes coffee\n",
+    )
+    .unwrap();
     fs::write(dir.join("heard.json"), "{\"said\":\"alice is here\"}\n").unwrap();
     let registry = Registry::new(dir.join("consent.jsonl"));
     registry.record("granted", "alice", "meeting", "").unwrap();
@@ -15,7 +19,9 @@ fn main() {
     // Her PII lives sealed under her subject ref.
     let vault = Vault::new(dir.join("keys")).unwrap();
     let sref = subject_ref("alice");
-    let sealed = vault.seal(b"{\"notes\":\"prefers mornings\"}", &sref).unwrap();
+    let sealed = vault
+        .seal(b"{\"notes\":\"prefers mornings\"}", &sref)
+        .unwrap();
 
     let signer = generate_signing_key();
     let vk = signer.verifying_key();

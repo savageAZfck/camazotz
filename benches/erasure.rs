@@ -31,11 +31,8 @@ fn main() {
         let _ = vault.seal(b"pii", &sref).unwrap();
         let notes = dir.join(format!("notes{i}.txt"));
         fs::write(&notes, format!("{name} line\nkeep\n")).unwrap();
-        let mut e = Erasure::new(
-            Vault::new(dir.join("keys")).unwrap(),
-            dir.join("certs"),
-        )
-        .with_signer(generate_signing_key());
+        let mut e = Erasure::new(Vault::new(dir.join("keys")).unwrap(), dir.join("certs"))
+            .with_signer(generate_signing_key());
         e.purge_lines(notes);
         black_box(e.forget(&name).unwrap());
     }

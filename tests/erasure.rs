@@ -69,9 +69,15 @@ fn forget_purges_revokes_shreds_certifies() {
     let cert = erasure.forget("alice").unwrap();
 
     assert!(cert.dek_destroyed);
-    assert!(cert.decrypt_verified, "post-shred decrypt must provably fail");
+    assert!(
+        cert.decrypt_verified,
+        "post-shred decrypt must provably fail"
+    );
     assert!(cert.signed);
-    assert!(cert.verify_signature(&vk), "certificate signature must verify");
+    assert!(
+        cert.verify_signature(&vk),
+        "certificate signature must verify"
+    );
     assert!(cert.purged.iter().any(|p| p.starts_with("filtered_lines")));
     assert!(cert.purged.iter().any(|p| p.starts_with("consent_revoked")));
 
@@ -85,7 +91,9 @@ fn forget_purges_revokes_shreds_certifies() {
 
     // Consent is revoked on record, not deleted.
     let reg = Registry::new(dir.join("consent.jsonl"));
-    assert!(!reg.active_subjects("meeting").contains(&"alice".to_string()));
+    assert!(!reg
+        .active_subjects("meeting")
+        .contains(&"alice".to_string()));
     assert!(reg.active_subjects("meeting").contains(&"bob".to_string()));
 
     // Sealed copies are unrecoverable — the vault key is destroyed.

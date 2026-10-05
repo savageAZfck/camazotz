@@ -72,9 +72,10 @@ impl Vault {
     fn key_path(&self, key_id: &str) -> PathBuf {
         // Filename is the hash of the key id — the id itself never leaks
         // into a directory listing.
-        self.dir
-            .join("keys")
-            .join(format!("{}.key", hex::encode(Sha256::digest(key_id.as_bytes()))))
+        self.dir.join("keys").join(format!(
+            "{}.key",
+            hex::encode(Sha256::digest(key_id.as_bytes()))
+        ))
     }
 
     /// Seal `plaintext` under the DEK for `key_id` (created on first use).
@@ -86,7 +87,7 @@ impl Vault {
         rand::RngCore::fill_bytes(&mut rand::rngs::OsRng, &mut nonce_bytes);
         let blob = cipher
             .encrypt(XNonce::from_slice(&nonce_bytes), plaintext)
-            .map_err(|_| io::Error::new(io::ErrorKind::Other, "seal failed"))?;
+            .map_err(|_| io::Error::other("seal failed"))?;
         Ok(SealedBox {
             nonce: hex::encode(nonce_bytes),
             blob: hex::encode(blob),
@@ -236,6 +237,8 @@ impl Certificate {
     }
 }
 
+type AuditSink = Box<dyn Fn(&str, Value) + Send + Sync>;
+
 /// The erasure organ. Register purge targets, then [`forget`](Self::forget).
 pub struct Erasure {
     pub vault: Vault,
@@ -245,7 +248,7 @@ pub struct Erasure {
     signer: Option<SigningKey>,
     /// Optional audit sink — receives `(event_type, payload)` for every
     /// certified erasure so the caller can anchor it in an audit chain.
-    audit: Option<Box<dyn Fn(&str, Value) + Send + Sync>>,
+    audit: Option<AuditSink>,
 }
 
 impl Erasure {
@@ -403,7 +406,7 @@ impl Erasure {
 
         if let Some(audit) = &self.audit {
             let cert_hash = hex::encode(Sha256::digest(
-                &serde_json::to_vec(&cert).unwrap_or_default(),
+                serde_json::to_vec(&cert).unwrap_or_default(),
             ));
             audit(
                 "erasure_certified",
